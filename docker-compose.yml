@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  marketplace-api:
+    build: ./marketplace-api
+    container_name: marketplace-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./marketplace-api/.env
+    depends_on:
+      - mongo
+
+  receiver-api:
+    build: ./receiver-api
+    container_name: receiver-api
+    ports:
+      - "3001:3000"
+    env_file:
+      - ./receiver-api/.env
+    depends_on:
+      - mongo
+      - marketplace-api
+
+volumes:
+  mongo-data:
