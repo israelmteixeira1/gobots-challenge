@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Patch, Param, Body } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { OrderStatus } from './schemas/order.schema';
 import { MongoObjectIdPipe } from 'src/common/pipes/mongo-objectId-pipe.pipe';
+import { OrderStatus } from './enums/order-status.enum';
 
 @Controller('orders')
 export class OrdersController {
