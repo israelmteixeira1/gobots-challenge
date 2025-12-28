@@ -36,7 +36,16 @@ export class WebhookService {
     };
 
     for (const webhook of webhooks) {
-      await firstValueFrom(this.httpService.post(webhook.callbackUrl, payload));
+      try {
+        await firstValueFrom(
+          this.httpService.post(webhook.callbackUrl, payload),
+        );
+      } catch (error) {
+        console.error(
+          `Falha no envio do webhook para ${webhook.callbackUrl}`,
+          error?.message,
+        );
+      }
     }
   }
 
