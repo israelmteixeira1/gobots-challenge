@@ -19,11 +19,13 @@ export class OrdersService {
 
     const createdOrder = await order.save();
 
-    await this.webhookService.notifyOrderEvent(
-      orderStatusToEvent(OrderStatus.CREATED),
-      createdOrder._id.toString(),
-      storeId,
-    );
+    setImmediate(() => {
+      this.webhookService.notifyOrderEvent(
+        orderStatusToEvent(OrderStatus.CREATED),
+        createdOrder._id.toString(),
+        storeId,
+      );
+    });
 
     return createdOrder;
   }
@@ -49,11 +51,13 @@ export class OrdersService {
       throw new NotFoundException();
     }
 
-    await this.webhookService.notifyOrderEvent(
-      orderStatusToEvent(status),
-      order._id.toString(),
-      order.storeId,
-    );
+    setImmediate(() => {
+      this.webhookService.notifyOrderEvent(
+        orderStatusToEvent(status),
+        order._id.toString(),
+        order.storeId,
+      );
+    });
 
     return order;
   }
