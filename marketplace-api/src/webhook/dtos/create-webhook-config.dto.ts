@@ -7,6 +7,6 @@ export class CreateWebhookConfigDto {
   storeIds: string[];
 
   @IsString()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   callbackUrl: string;
 }
