@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { OrderEvent } from 'src/webhook/enums/order-event.enum';
 import { OrderEventDto } from './dtos/order.event.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class WebhookService {
@@ -29,6 +30,7 @@ export class WebhookService {
     }
 
     const payload: OrderEventDto = {
+      eventId: randomUUID(),
       event,
       orderId,
       storeId,
