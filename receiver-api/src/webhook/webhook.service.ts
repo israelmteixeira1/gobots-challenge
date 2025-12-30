@@ -15,6 +15,13 @@ export class WebhookService {
   ) {}
 
   async handleEvent(event: OrderEventDto) {
+    const exists = await this.orderEventModel.exists({
+      eventId: event.eventId,
+    });
+    if (exists) {
+      return;
+    }
+
     const order = await this.fetchOrder(event.orderId);
     await this.saveEvent(event, order);
   }
