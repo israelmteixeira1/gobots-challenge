@@ -29,7 +29,7 @@ export class WebhookService {
 
   private async saveEvent(event: OrderEventDto, orderSnapshot: any) {
     const orderEvent = new this.orderEventModel({
-      event,
+      ...event,
       orderSnapshot,
     });
 
