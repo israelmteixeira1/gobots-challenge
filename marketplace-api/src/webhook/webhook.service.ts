@@ -39,12 +39,10 @@ export class WebhookService {
 
     for (const webhook of webhooks) {
       try {
-        await firstValueFrom(
-          this.httpService.post(webhook.callbackUrl, payload),
-        );
+        await this.sendWithRetry(webhook.callbackUrl, payload);
       } catch (error) {
         console.error(
-          `Falha no envio do webhook para ${webhook.callbackUrl}`,
+          `Falha definitiva no envio do webhook para ${webhook.callbackUrl}`,
           error?.message,
         );
       }
@@ -53,5 +51,29 @@ export class WebhookService {
 
   private async findByStoreId(storeId: string): Promise<WebhookConfig[]> {
     return this.webhookConfigModel.find({ storeIds: storeId }).exec();
+  }
+
+  private async sendWithRetry(
+    url: string,
+    payload: OrderEventDto,
+    attempts = 3,
+    delaySeconds = 3,
+  ): Promise<void> {
+    try {
+      await firstValueFrom(this.httpService.post(url, payload));
+    } catch (error) {
+      if (attempts <= 1) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+
+      return this.sendWithRetry(
+        url,
+        payload,
+        attempts - 1,
+        delaySeconds * 1000,
+      );
+    }
   }
 }
