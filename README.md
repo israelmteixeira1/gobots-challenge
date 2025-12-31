@@ -1,98 +1,93 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Desafio Técnico — GoBots
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este projeto implementa um fluxo simples de marketplace utilizando duas APIs que se comunicam via webhook.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A Marketplace API é responsável por criar pedidos, atualizar status e disparar eventos.  
+A Receiver API recebe esses eventos via webhook, consulta os dados do pedido na Marketplace API e persiste as informações recebidas, garantindo idempotência.
 
-## Description
+Todo o ambiente é executado via Docker.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Como subir o projeto
 
-## Project setup
+Na raiz do repositório, execute o comando abaixo:
 
-```bash
-$ npm install
-```
+docker-compose up --build
 
-## Compile and run the project
+Após a inicialização dos containers, os serviços estarão disponíveis nos seguintes endereços:
 
-```bash
-# development
-$ npm run start
+Marketplace API: http://localhost:3000  
+Receiver API: http://localhost:3001
 
-# watch mode
-$ npm run start:dev
+Como cadastrar um webhook
 
-# production mode
-$ npm run start:prod
-```
+O webhook deve ser cadastrado na Marketplace API, informando a loja e a URL de callback do Receiver API.
 
-## Run tests
+Exemplo de cadastro via curl:
 
-```bash
-# unit tests
-$ npm run test
+curl -X POST http://localhost:3000/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "storeIds": ["store_001"],
+    "callbackUrl": "http://receiver-api:3001/webhook/orders"
+  }'
 
-# e2e tests
-$ npm run test:e2e
+Observação: o hostname receiver-api é utilizado pois os serviços se comunicam pela rede interna do Docker.
 
-# test coverage
-$ npm run test:cov
-```
+Como criar um pedido
 
-## Deployment
+Para criar um pedido, execute a chamada abaixo na Marketplace API:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+curl -X POST http://localhost:3000/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "storeId": "store_001"
+  }'
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Ao criar o pedido:
+- O status inicial será CREATED
+- Um evento order.created será disparado automaticamente para o Receiver API
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+Como atualizar o status de um pedido
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Para atualizar o status de um pedido existente, execute:
 
-## Resources
+curl -X PATCH http://localhost:3000/orders/ORDER_ID/status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "PAID"
+  }'
 
-Check out a few resources that may come in handy when working with NestJS:
+A Marketplace API valida as transições de status e rejeita alterações inválidas, retornando erro HTTP 400 quando a transição não é permitida.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Como validar o resultado no Receiver
 
-## Support
+Validação via banco de dados (MongoDB)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Acesse o container do MongoDB:
 
-## Stay in touch
+docker exec -it mongo mongosh
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Selecione o banco de dados do Receiver e liste os eventos persistidos:
 
-## License
+use receiver_db
+db.orderevents.find().pretty()
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Cada documento salvo contém:
+- O evento recebido via webhook
+- O identificador do evento (eventId)
+- O snapshot completo do pedido consultado na Marketplace API
+
+Validação via logs do container
+
+Também é possível validar o processamento dos eventos pelos logs do Receiver API:
+
+docker logs receiver-api
+
+Os logs indicam o recebimento, validação de idempotência e persistência dos eventos.
+
+Observações finais
+
+- O Receiver API é idempotente: eventos com o mesmo eventId não são processados mais de uma vez.
+- O endpoint de recebimento de webhook retorna sucesso mesmo para eventos duplicados, evitando retries desnecessários.
+- A Marketplace API possui validação de transição de status baseada em uma máquina de estados.
+- O retry de envio de eventos é tratado na Marketplace API em caso de falha de comunicação com o Receiver.
