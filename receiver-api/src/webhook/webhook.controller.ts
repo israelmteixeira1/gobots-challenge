@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { WebhookService } from './webhook.service';
 import { OrderEventDto } from './dtos/order.event.dto';
 
@@ -9,5 +9,10 @@ export class WebhookController {
   @Post('/webhook/orders')
   async handleOrderEvent(@Body() payload: OrderEventDto) {
     return this.webhookService.handleEvent(payload);
+  }
+
+  @Get('/events')
+  async listEvents() {
+    return await this.webhookService.findAll();
   }
 }

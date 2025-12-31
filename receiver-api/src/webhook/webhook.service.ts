@@ -14,16 +14,21 @@ export class WebhookService {
     private readonly orderEventModel: Model<OrderEventDocument>,
   ) {}
 
-  async handleEvent(event: OrderEventDto) {
-    const exists = await this.orderEventModel.exists({
-      eventId: event.eventId,
-    });
-    if (exists) {
-      return;
-    }
+  async findAll() {
+    return this.orderEventModel.find().lean();
+  }
 
-    const order = await this.fetchOrder(event.orderId);
-    await this.saveEvent(event, order);
+  async handleEvent(event: OrderEventDto) {
+    try {
+      const order = await this.fetchOrder(event.orderId);
+      await this.saveEvent(event, order);
+    } catch (err) {
+      if (err.code === 11000) {
+        // Duplicate key error code
+        return;
+      }
+      throw err;
+    }
   }
 
   private async fetchOrder(orderId: string) {
