@@ -9,7 +9,7 @@ export class OrderEvent {
   eventId: string;
 
   @Prop({ required: true, enum: OrderEventEnum })
-  eventType: OrderEventEnum;
+  event: OrderEventEnum;
 
   @Prop({ required: true, index: true })
   orderId: string;
