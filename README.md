@@ -19,10 +19,44 @@ docker-compose up --build
 
 Após a inicialização dos containers, os serviços estarão disponíveis nos seguintes endereços:
 
-| Serviço         | URL                    |
-| --------------- | ---------------------- |
-| Marketplace API | http://localhost:3000  |
-| Receiver API    | http://localhost:3001  |
+| Serviço         | URL                   |
+| --------------- | --------------------- |
+| Marketplace API | http://localhost:3000 |
+| Receiver API    | http://localhost:3001 |
+
+---
+
+## Variáveis de ambiente
+
+Cada serviço requer um arquivo `.env` com as variáveis de configuração. Os arquivos devem ser criados na raiz de cada serviço.
+
+### Marketplace API
+
+Crie o arquivo `marketplace-api/.env`:
+
+```env
+MONGO_URI=mongodb://mongo:27017/marketplace
+```
+
+| Variável    | Descrição                                  |
+| ----------- | ------------------------------------------ |
+| `MONGO_URI` | URI de conexão com o banco de dados MongoDB |
+
+### Receiver API
+
+Crie o arquivo `receiver-api/.env`:
+
+```env
+MONGO_URI=mongodb://mongo:27017/receiver
+MARKETPLACE_BASE_URL=http://marketplace-api:3000
+```
+
+| Variável               | Descrição                                        |
+| ---------------------- | ------------------------------------------------ |
+| `MONGO_URI`            | URI de conexão com o banco de dados MongoDB       |
+| `MARKETPLACE_BASE_URL` | URL base da Marketplace API para consulta de pedidos |
+
+> **Nota:** Os hostnames `mongo` e `marketplace-api` referem-se aos nomes dos serviços definidos no `docker-compose.yml`, utilizados para comunicação na rede interna do Docker.
 
 ---
 
