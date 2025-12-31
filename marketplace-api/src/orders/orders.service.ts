@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { Model } from 'mongoose';
 import { OrderStatus } from './enums/order-status.enum';
 import { WebhookService } from 'src/webhook/webhook.service';
 import { orderStatusToEvent } from './utils/order-status-to-event.util';
+import { canTransitionStatus } from './utils/order-status-transition.util';
 
 @Injectable()
 export class OrdersService {
@@ -15,7 +20,10 @@ export class OrdersService {
   ) {}
 
   async create(storeId: string): Promise<Order> {
-    const order = new this.orderModel({ storeId });
+    const order = new this.orderModel({
+      storeId,
+      status: OrderStatus.CREATED,
+    });
 
     const createdOrder = await order.save();
 
@@ -41,15 +49,20 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus): Promise<Order> {
-    const order = await this.orderModel.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true },
-    );
+    const order = await this.orderModel.findById(id);
 
     if (!order) {
       throw new NotFoundException();
     }
+
+    if (!canTransitionStatus(order.status, status)) {
+      throw new BadRequestException(
+        `Não é permitido alterar o status do pedido de ${order.status} para ${status}`,
+      );
+    }
+
+    order.status = status;
+    await order.save();
 
     setImmediate(() => {
       this.webhookService.notifyOrderEvent(
