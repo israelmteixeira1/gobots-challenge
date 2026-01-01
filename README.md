@@ -77,19 +77,6 @@ cd marketplace-api
 npm run test
 ```
 
-### Receiver API
-
-A **Receiver API** não possui testes unitários neste momento. Isso ocorre porque o serviço atua exclusivamente como consumidor de eventos (webhooks), com lógica mínima:
-
-- Recebe eventos via HTTP
-- Valida idempotência pelo `eventId`
-- Consulta dados na Marketplace API
-- Persiste o snapshot no MongoDB
-
-A complexidade de negócio está centralizada na Marketplace API, justificando a priorização dos testes nesse serviço.
-
----
-
 ## Como cadastrar um webhook
 
 O webhook deve ser cadastrado na Marketplace API **antes** de criar pedidos. Ele define quais lojas (`storeIds`) terão eventos enviados para a URL de callback especificada.
