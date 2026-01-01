@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { WebhookConfig } from './schemas/webhook-config.schema';
 import { Model } from 'mongoose';
@@ -11,6 +11,8 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class WebhookService {
+  private readonly logger = new Logger(WebhookService.name);
+
   constructor(
     @InjectModel(WebhookConfig.name)
     private readonly webhookConfigModel: Model<WebhookConfig>,
@@ -18,14 +20,23 @@ export class WebhookService {
   ) {}
 
   async create(config: CreateWebhookConfigDto): Promise<WebhookConfig> {
+    this.logger.log(
+      `Registrando webhook para as lojas: ${config.storeIds.join(', ')}`,
+    );
+
     const webhookConfig = new this.webhookConfigModel(config);
     return webhookConfig.save();
   }
 
   async notifyOrderEvent(event: OrderEvent, orderId: string, storeId: string) {
+    this.logger.log(
+      `Notificando evento ${event} do pedido ${orderId} para a loja ${storeId}`,
+    );
+
     const webhooks = await this.findByStoreId(storeId);
 
     if (!webhooks.length) {
+      this.logger.warn(`Nenhum webhook configurado para a loja ${storeId}`);
       return;
     }
 
@@ -38,12 +49,17 @@ export class WebhookService {
     };
 
     for (const webhook of webhooks) {
+      this.logger.log(`Enviando evento ${event} para ${webhook.callbackUrl}`);
+
       try {
         await this.sendWithRetry(webhook.callbackUrl, payload);
-      } catch (error) {
-        console.error(
+        this.logger.log(
+          `Evento ${event} enviado com sucesso para ${webhook.callbackUrl}`,
+        );
+      } catch (error: any) {
+        this.logger.error(
           `Falha definitiva no envio do webhook para ${webhook.callbackUrl}`,
-          error?.message,
+          error?.stack,
         );
       }
     }
@@ -62,18 +78,19 @@ export class WebhookService {
     try {
       await firstValueFrom(this.httpService.post(url, payload));
     } catch (error) {
+      this.logger.warn(
+        `Falha ao enviar webhook para ${url}. Tentativas restantes: ${
+          attempts - 1
+        }`,
+      );
+
       if (attempts <= 1) {
         throw error;
       }
 
       await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
 
-      return this.sendWithRetry(
-        url,
-        payload,
-        attempts - 1,
-        delaySeconds * 1000,
-      );
+      return this.sendWithRetry(url, payload, attempts - 1, delaySeconds);
     }
   }
 }
