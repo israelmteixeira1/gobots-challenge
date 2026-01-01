@@ -60,9 +60,39 @@ MARKETPLACE_BASE_URL=http://marketplace-api:3000
 
 ---
 
+## Testes
+
+### Marketplace API
+
+Os testes unitários estão implementados apenas na **Marketplace API**, pois é onde estão concentradas as principais regras de negócio do sistema:
+
+- Criação e gerenciamento de pedidos
+- Validação de transições de status (máquina de estados)
+- Disparo de eventos para webhooks cadastrados
+
+Para executar os testes, acesse o diretório do serviço e execute o comando:
+
+```bash
+cd marketplace-api
+npm run test
+```
+
+### Receiver API
+
+A **Receiver API** não possui testes unitários neste momento. Isso ocorre porque o serviço atua exclusivamente como consumidor de eventos (webhooks), com lógica mínima:
+
+- Recebe eventos via HTTP
+- Valida idempotência pelo `eventId`
+- Consulta dados na Marketplace API
+- Persiste o snapshot no MongoDB
+
+A complexidade de negócio está centralizada na Marketplace API, justificando a priorização dos testes nesse serviço.
+
+---
+
 ## Como cadastrar um webhook
 
-O webhook deve ser cadastrado na Marketplace API, informando a loja e a URL de callback do Receiver API.
+O webhook deve ser cadastrado na Marketplace API **antes** de criar pedidos. Ele define quais lojas (`storeIds`) terão eventos enviados para a URL de callback especificada.
 
 **Exemplo de cadastro via curl:**
 
@@ -75,7 +105,8 @@ curl -X POST http://localhost:3000/webhooks \
   }'
 ```
 
-> **Observação:** o hostname `receiver-api` é utilizado pois os serviços se comunicam pela rede interna do Docker.
+> ⚠️ **Importante:** O webhook **deve** ser cadastrado exatamente no formato acima, utilizando o hostname `receiver-api` na `callbackUrl`. Esse hostname corresponde ao nome do serviço definido no `docker-compose.yml` e é necessário para a comunicação na rede interna do Docker.
+
 
 ---
 
@@ -95,6 +126,10 @@ Ao criar o pedido:
 
 - O status inicial será `CREATED`
 - Um evento `order.created` será disparado automaticamente para o Receiver API
+
+> ⚠️ **Importante:** O `storeId` informado na criação do pedido **precisa estar previamente cadastrado** em um webhook. Caso contrário, o evento não será disparado para nenhum receptor.
+
+> 💡 **Dica:** Sempre cadastre o webhook primeiro, incluindo o `storeId` desejado no array `storeIds`, e só depois crie pedidos para essa loja.
 
 ---
 
