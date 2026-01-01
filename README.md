@@ -9,26 +9,11 @@ Todo o ambiente é executado via Docker.
 
 ---
 
-## Como subir o projeto
-
-Na raiz do repositório, execute o comando abaixo:
-
-```bash
-docker-compose up --build
-```
-
-Após a inicialização dos containers, os serviços estarão disponíveis nos seguintes endereços:
-
-| Serviço         | URL                   |
-| --------------- | --------------------- |
-| Marketplace API | http://localhost:3000 |
-| Receiver API    | http://localhost:3001 |
-
----
-
 ## Variáveis de ambiente
 
-Cada serviço requer um arquivo `.env` com as variáveis de configuração. Os arquivos devem ser criados na raiz de cada serviço.
+Cada serviço requer um arquivo `.env` com as variáveis de configuração. **Os arquivos devem ser criados antes de executar o comando `docker compose up --build`.**
+
+Cada serviço possui seu próprio arquivo `.env`, localizado na raiz de sua respectiva pasta.
 
 ### Marketplace API
 
@@ -60,22 +45,22 @@ MARKETPLACE_BASE_URL=http://marketplace-api:3000
 
 ---
 
-## Testes
+## Como subir o projeto
 
-### Marketplace API
-
-Os testes unitários estão implementados apenas na **Marketplace API**, pois é onde estão concentradas as principais regras de negócio do sistema:
-
-- Criação e gerenciamento de pedidos
-- Validação de transições de status (máquina de estados)
-- Disparo de eventos para webhooks cadastrados
-
-Para executar os testes, acesse o diretório do serviço e execute o comando:
+Na raiz do repositório, execute o comando abaixo:
 
 ```bash
-cd marketplace-api
-npm run test
+docker compose up --build
 ```
+
+Após a inicialização dos containers, os serviços estarão disponíveis nos seguintes endereços:
+
+| Serviço         | URL                   |
+| --------------- | --------------------- |
+| Marketplace API | http://localhost:3000 |
+| Receiver API    | http://localhost:3001 |
+
+---
 
 ## Como cadastrar um webhook
 
@@ -93,7 +78,6 @@ curl -X POST http://localhost:3000/webhooks \
 ```
 
 > ⚠️ **Importante:** O webhook **deve** ser cadastrado exatamente no formato acima, utilizando o hostname `receiver-api` na `callbackUrl`. Esse hostname corresponde ao nome do serviço definido no `docker-compose.yml` e é necessário para a comunicação na rede interna do Docker.
-
 
 ---
 
@@ -149,7 +133,7 @@ docker exec -it mongo mongosh
 Selecione o banco de dados do Receiver e liste os eventos persistidos:
 
 ```javascript
-use receiver_db
+use receiver
 db.orderevents.find().pretty()
 ```
 
@@ -168,6 +152,25 @@ docker logs receiver-api
 ```
 
 Os logs indicam o recebimento, validação de idempotência e persistência dos eventos.
+
+---
+
+## Testes
+
+### Marketplace API
+
+Os testes unitários estão implementados apenas na **Marketplace API**, pois é onde estão concentradas as principais regras de negócio do sistema:
+
+- Criação e gerenciamento de pedidos
+- Validação de transições de status (máquina de estados)
+- Disparo de eventos para webhooks cadastrados
+
+Para executar os testes, acesse o diretório do serviço e execute o comando:
+
+```bash
+cd marketplace-api
+npm run test
+```
 
 ---
 
